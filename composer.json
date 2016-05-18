@@ -1,0 +1,27 @@
+{
+    "name": "novactive/rubedo-core-installer",
+    "type": "composer-plugin",
+    "description": "Composer installer plugin for Rubedo core",
+    "license": "MIT",
+    "minimum-stability": "dev",
+    "authors": [
+        {
+            "name": "Guillaume Maïssa",
+            "email": "g.maissa@novactive.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {"Novactive\\Rubedo\\Composer\\": "src/"}
+    },
+    "extra": {
+        "class": "Novactive\\Rubedo\\Composer\\InstallerPlugin"
+    },
+    "require": {
+        "composer-plugin-api": "^1.0"
+    },
+    "require-dev": {
+        "novactive/phpcs-novastandards": "^1.3",
+        "phpmd/phpmd": "^2.4",
+        "sebastian/phpcpd": "^2.0"
+    }
+}

@@ -1,0 +1,22 @@
+-   repo: git@github.com:hootsuite/pre-commit-php.git
+    sha: 9a3b92d6e3368c74df50d84a877fd72a61ae1f9b
+    hooks:
+    -   id: php-lint
+    -   id: php-cs
+        files: \.(php)$
+        args:
+        - --standard=vendor/novactive/phpcs-novastandards/src/NovaPSR2 -p
+
+-   repo: git@github.com:craig-davis/pre-commit-php.git
+    sha: e650d7b1ef767a08c12a3220aad10ebef57ebd2b
+    hooks:
+    -   id: php-md
+        files: \.(php)$
+        args: ["codesize,controversial,design,unusedcode"]
+
+-   repo: git@github.com:craig-davis/pre-commit-php.git
+    sha: 7ee9e17f17a0e7287f4d058cffdbc5b0990846a0
+    hooks:
+    -   id: php-cpd
+        files: \.(php)$
+        args: ["--min-tokens=10"]

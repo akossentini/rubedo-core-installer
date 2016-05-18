@@ -16,6 +16,7 @@ use Composer\IO\IOInterface;
 use Composer\Repository\InstalledRepositoryInterface;
 use Composer\Installer\LibraryInstaller;
 use Composer\Package\PackageInterface;
+use Composer\Util\Filesystem;
 
 /**
  * Main class for Rubedo Core installation

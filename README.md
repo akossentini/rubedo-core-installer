@@ -2,7 +2,8 @@
 
 ## About
 
-This Composer installer plugin lets you install Rubedo Core as a project dependency with Composer.
+This Composer installer plugin lets
+ syou install Rubedo Core as a project dependency with Composer.
 
 ## How it works
 
@@ -30,3 +31,16 @@ Configuration          | Type             | Description                         
 rubedo-root-dir        | string           | Path to rubedo root directory                                                                     |
 rubedo-files-to-ignore | array of strings | List of files from Rubedo Core repository that should not be installed (default: .gitignore)      |
 rubedo-dirs-to-ignore  | array of strings | List of dirs from Rubedo Core repository that should not be installed (default: .git, extensions) |
+
+## Contributing
+
+In order to be accepted, your contribution needs to pass a few controls : 
+
+* PHP files should be valid
+* PHP files should follow the [PSR-2](http://www.php-fig.org/psr/psr-2/) standard
+* PHP files should be [phpmd](https://phpmd.org) and [phpcpd](https://github.com/sebastianbergmann/phpcpd) warning/error free
+
+To ease the validation process, install the [pre-commit framework](http://pre-commit.com) and install the repository pre-commit hook :
+
+    pre-commit install
+

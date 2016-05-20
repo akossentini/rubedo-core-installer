@@ -44,3 +44,4 @@ To ease the validation process, install the [pre-commit framework](http://pre-co
 
     pre-commit install
 
+Finally, in order to homogenize commit messages across contributors (and to ease generation of the CHANGELOG), please apply this [git commit message hook](https://gist.github.com/GMaissa/f008b2ffca417c09c7b8) onto your local repository.  

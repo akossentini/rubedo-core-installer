@@ -88,16 +88,6 @@ class CoreInstaller extends LibraryInstaller
      */
     public function getInstallPath(PackageInterface $package)
     {
-        if ($this->io->isVerbose()) {
-            $this->io->write(
-                sprintf(
-                    "Install path for package %s is '%s'",
-                    $package->getPrettyName(),
-                    $this->rubedoRootDir
-               )
-           );
-        }
-
         return $this->rubedoRootDir;
     }
 

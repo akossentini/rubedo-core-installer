@@ -2,7 +2,7 @@
 
 ## About
 
-This Composer installer plugin let you install Rubedo Core as a project dependency with Composer.
+This Composer installer plugin lets you install Rubedo Core as a project dependency with Composer.
 
 ## How it works
 

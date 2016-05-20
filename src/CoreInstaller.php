@@ -48,6 +48,23 @@ class CoreInstaller extends LibraryInstaller
     protected $fileSystem;
 
     /**
+     * List of files to ignore during package installation / update
+     * @var array
+     */
+    protected $filesToIgnore = array(
+        '.gitignore'
+    );
+
+    /**
+     * List of directories to ignore during package installation / update
+     * @var array
+     */
+    protected $dirsToIgnore = array(
+        '.git',
+        'extensions'
+    );
+
+    /**
      * {@inheritdoc}
      */
     public function __construct(IOInterface $io, Composer $composer, $type = '')
@@ -58,6 +75,12 @@ class CoreInstaller extends LibraryInstaller
         $this->rubedoRootDir = isset($options['rubedo-root-dir']) ? rtrim($options['rubedo-root-dir'], '/') : '.';
         $this->process       = new ProcessExecutor($io);
         $this->fileSystem    = new Filesystem();
+        if (isset($options['rubedo-files-to-ignore'])) {
+           $this->filesToIgnore = $options['rubedo-files-to-ignore'];
+        }
+        if (isset($options['rubedo-dirs-to-ignore'])) {
+            $this->dirsToIgnore = $options['rubedo-dirs-to-ignore'];
+        }
     }
 
     /**
@@ -100,8 +123,7 @@ class CoreInstaller extends LibraryInstaller
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
         $installPath = $this->getInstallPath($package);
-        $fileSystem  = $this->fileSystem;
-        if (!is_dir($installPath) || $fileSystem->isDirEmpty($installPath)) {
+        if (!is_dir($installPath) || $this->fileSystem->isDirEmpty($installPath)) {
             return parent::install($repo, $package);
         }
 
@@ -112,36 +134,18 @@ class CoreInstaller extends LibraryInstaller
         }
         parent::install($repo, $package);
 
+        // Retrieving previous package version
+        $oldPkg = false;
         foreach ($repo->getPackages() as $installedPkg) {
             if ($installedPkg->getName() == $package->getName()) {
                 $oldPkg = $installedPkg;
             }
         }
 
-        $removedFiles = $this->getRemovedFiles($package, $oldPkg);
-        $this->cleanTempDir($fileSystem);
+        // Retrieving list of package files removed from previous installed version
+        $removedFiles = $oldPkg ? $this->getRemovedFiles($package, $oldPkg) : array();
 
-        if ($this->io->isVerbose()) {
-            $this->io->write("Updating new code over existing installation.");
-        }
-
-        $fileSystem->copyThenRemove($this->rubedoRootDir, $actualRootDir);
-
-        if (method_exists($this,'removeBinaries')) {
-            $this->removeBinaries($package);
-        } else {
-            $this->binaryInstaller->removeBinaries($package);
-        }
-
-        $this->rubedoRootDir = $actualRootDir;
-
-        if (method_exists($this,'installBinaries')) {
-            $this->installBinaries($package);
-        } else {
-            $this->binaryInstaller->installBinaries($package, $this->getInstallPath($package));
-        }
-
-        $this->deleteRemovedFiles($removedFiles);
+        $this->installRubedoCoreSources($actualRootDir, $removedFiles);
     }
 
     /**
@@ -151,24 +155,13 @@ class CoreInstaller extends LibraryInstaller
     {
         $actualRootDir       = $this->rubedoRootDir;
         $this->rubedoRootDir = $this->generateTempDir();
-        $fileSystem          = $this->fileSystem;
 
-        if ($this->io->isVerbose()) {
-            $this->io->write("Installing in temporary directory.");
-        }
         $this->installCode($target);
 
+        // Retrieving list of package files removed from previous installed version
         $removedFiles = $this->getRemovedFiles($target, $initial);
-        $this->cleanTempDir();
 
-        if ($this->io->isVerbose()) {
-            $this->io->write("Updating new code over existing installation.");
-        }
-        $fileSystem->copyThenRemove($this->rubedoRootDir, $actualRootDir);
-
-        $this->rubedoRootDir = $actualRootDir;
-
-        $this->deleteRemovedFiles($removedFiles);
+        $this->installRubedoCoreSources($actualRootDir, $removedFiles);
     }
 
     /**
@@ -203,7 +196,7 @@ class CoreInstaller extends LibraryInstaller
                 $this->io->write("Retrieving list of removed files from previous version installed.");
             }
             $command = sprintf(
-                'git diff --summary --diff-filter=D %s %s -- | cut -d" " -f5',
+                'git diff --name-only --diff-filter=D %s %s',
                 $initial->getSourceReference(),
                 $target->getSourceReference()
            );
@@ -213,7 +206,7 @@ class CoreInstaller extends LibraryInstaller
                     'Failed to execute ' . $command . "\n\n" . $this->process->getErrorOutput()
                );
             }
-            $removedFiles = explode(PHP_EOL, rtrim($output));
+            $removedFiles = explode(PHP_EOL, ltrim(rtrim($output)));
         }
 
         return $removedFiles;
@@ -224,10 +217,13 @@ class CoreInstaller extends LibraryInstaller
      */
     protected function cleanTempDir()
     {
-        // Remove directories / files that should not be copied
-        $this->fileSystem->unlink($this->rubedoRootDir . '/.gitignore');
-        $this->fileSystem->removeDirectoryPhp($this->rubedoRootDir . '/.git');
-        $this->fileSystem->removeDirectoryPhp($this->rubedoRootDir . '/extensions');
+        foreach ($this->filesToIgnore as $fileToIgnore) {
+            $this->fileSystem->unlink($this->rubedoRootDir . '/' . $fileToIgnore);
+        }
+
+        foreach ($this->dirsToIgnore as $dirToIgnore) {
+            $this->fileSystem->removeDirectoryPhp($this->rubedoRootDir . '/' . $dirToIgnore);
+        }
     }
 
     /**
@@ -239,12 +235,33 @@ class CoreInstaller extends LibraryInstaller
     {
         foreach ($removedFiles as $file) {
             $filePath = $this->rubedoRootDir . '/' . $file;
-            if ($file != '' && file_exists($filePath)) {
+            if ($file != '' && file_exists($filePath) && is_file($filePath)) {
                 if ($this->io->isVerbose()) {
                     $this->io->write(sprintf('removing file %s ', $filePath));
                 }
                 $this->fileSystem->unlink($filePath);
             }
         }
+    }
+
+    /**
+     * Install Rubedo Core sources
+     *
+     * @param string $actualRootDir Rubedo root dir for project
+     * @param array  $removedFiles  List of old files to remove after installation
+     */
+    protected function installRubedoCoreSources($actualRootDir, $removedFiles)
+    {
+        if ($this->io->isVerbose()) {
+            $this->io->write("Updating new code over existing installation.");
+        }
+        // Removing files / directories to ignore from installation from temporary dir
+        $this->cleanTempDir();
+        $this->fileSystem->copyThenRemove($this->rubedoRootDir, $actualRootDir);
+
+        $this->rubedoRootDir = $actualRootDir;
+
+        // Deleting files removed from the previous package release
+        $this->deleteRemovedFiles($removedFiles);
     }
 }

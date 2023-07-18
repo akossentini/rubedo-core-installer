@@ -17,7 +17,7 @@
         "class": "Novactive\\Rubedo\\Composer\\InstallerPlugin"
     },
     "require": {
-        "composer-plugin-api": "^1.0"
+        "composer-plugin-api": ">=1.0"
     },
     "require-dev": {
         "novactive/phpcs-novastandards": "^1.3",
